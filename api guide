@@ -1,0 +1,254 @@
+Start Here
+Quick start
+Use Showdown internal names in API routes. Without a season or days query, battle rows come from the current root folders.
+
+const index = await fetch("https://championsbattledata.com/api")
+  .then((response) => response.json());
+
+const garchomp = await fetch(
+  "https://championsbattledata.com/api/pokemon/garchomp?format=Doubles"
+).then((response) => response.json());
+
+const dailyRows = await fetch(
+  "https://championsbattledata.com/api/battle/Doubles/garchomp?season=M4&days=7"
+).then((response) => response.json());
+Static Assets
+Folder structure
+The root Doubles and Singles folders contain the current/latest data. Dated folders contain daily snapshots grouped by season and date.
+
+API route names accept Pokemon Showdown internal IDs such as garchomp, raichualola, and taurospaldeaaqua.
+
+pokemon_champions_assets/
+  battle_data/
+    Doubles/
+      Garchomp.csv                    <- current Doubles data
+      Alolan Raichu.csv
+    Singles/
+      Garchomp.csv                    <- current Singles data
+    M4/
+      16_07_2026/
+        Doubles/
+          Garchomp.csv                <- daily Doubles snapshot
+        Singles/
+          Garchomp.csv                <- daily Singles snapshot
+  metadata/
+    Tauros.csv                        <- one file with all Tauros forms
+  pokemon/
+    Tauros.png
+    Paldean Tauros Aqua Breed.png
+  types/
+    Dragon.png
+Name Matching
+Pokemon Showdown internal names
+Use standard Pokemon Showdown IDs in JSON API routes. Human-readable names and site slugs still work.
+
+GET /api/battle/Doubles/garchomp
+GET /api/battle/Doubles/rotomwash
+GET /api/battle/Doubles/taurospaldeaaqua
+GET /api/battle/Singles/raichualola
+GET /api/battle/Singles/taurospaldeaaqua
+GET /api/battle/Singles/basculegionf
+showdownId
+The matched Pokemon Showdown internal ID, for example raichualola.
+showdownName
+The standardized Showdown species name, for example Raichu-Alola.
+saved_name
+The form-specific site/file name still used by raw CSV and sprite assets.
+Endpoint 01
+Index
+Use the index first. It lists Pokemon, Showdown IDs, available current and daily data folders, formats, file paths, sprites, typing, stats, and summaries.
+
+GET
+/api
+GET
+/api/index
+GET
+/data/pokemon-index.json
+defaultSeason
+Current, backed by battle_data/Doubles and battle_data/Singles.
+dailyDataFolders
+Dated snapshot folders such as M4/16_07_2026.
+pokemon[].showdownId
+The Pokemon Showdown internal ID accepted by API routes.
+pokemon[].battleDataCsvs
+Current and daily source CSV paths for that Pokemon.
+Endpoint 02
+Pokemon record
+Returns one indexed Pokemon. Add format to include the current matching summary and CSV path. Add days to list recent daily CSVs for that format.
+
+GET
+/api/pokemon/garchomp?format=Doubles
+GET
+/api/pokemon/taurospaldeaaqua?format=Doubles&season=M4&days=7
+{
+  "name": "Garchomp",
+  "showdownId": "garchomp",
+  "requestedFormat": "Doubles",
+  "requestedSeason": "Current",
+  "battleDataCsv": {
+    "season": "Current",
+    "format": "Doubles",
+    "path": "pokemon_champions_assets/battle_data/Doubles/Garchomp.csv"
+  },
+  "dailyBattleDataCsvs": [
+    {
+      "season": "M4",
+      "date": "16_07_2026",
+      "format": "Doubles",
+      "path": "pokemon_champions_assets/battle_data/M4/16_07_2026/Doubles/Garchomp.csv"
+    }
+  ]
+}
+Endpoint 03
+Battle rows
+Returns parsed rows from the current battle-data CSV by default. Use this for moves, items, teammates, natures, spreads, and abilities.
+
+GET
+/api/battle/Doubles/garchomp
+GET
+/api/battle/Singles/raichualola
+{
+  "pokemon": "Garchomp",
+  "showdownId": "garchomp",
+  "format": "Doubles",
+  "season": "Current",
+  "source": "pokemon_champions_assets/battle_data/Doubles/Garchomp.csv",
+  "rows": [
+    {
+      "position": 1,
+      "category": "move",
+      "rank": 1,
+      "name": "Earthquake",
+      "percentage": "90.3%",
+      "percentage_value": 90.3
+    }
+  ]
+}
+Daily Snapshots
+Last x days of daily data
+Add days= to the battle endpoint to fetch the most recent dated snapshots for one Pokemon and format. Add season=M4 to limit the daily search to a season folder.
+
+GET
+/api/battle/Doubles/garchomp?days=7
+GET
+/api/battle/Doubles/garchomp?season=M4&days=7
+{
+  "pokemon": "Garchomp",
+  "showdownId": "garchomp",
+  "format": "Doubles",
+  "requestedDays": 7,
+  "season": "M4",
+  "daily": [
+    {
+      "season": "M4",
+      "date": "16_07_2026",
+      "source": "pokemon_champions_assets/battle_data/M4/16_07_2026/Doubles/Garchomp.csv",
+      "columns": ["pokemon", "column_position", "category", "rank", "name", "percentage"],
+      "rows": []
+    }
+  ]
+}
+days
+Integer from 1 to 31.
+season
+Optional season folder such as M4. If omitted, the newest daily snapshots across seasons are used.
+daily[].date
+Date folder in DD_MM_YYYY format.
+Endpoint 04
+Metadata rows
+Returns all forms for a Pokémon from a single metadata file. Request by base name (e.g. tauros) — the response contains one row per form, each identified by its form-specific saved_name.
+
+Use saved_name to build paths to sprites and battle data. Use base_name to group forms together.
+
+GET
+/api/metadata/tauros
+{
+  "pokemon": "Tauros",
+  "source": "pokemon_champions_assets/metadata/Tauros.csv",
+  "rows": [
+    {
+      "title": "Tauros [Paldean Form (Aqua Breed)]",
+      "base_name": "Tauros",
+      "saved_name": "Paldean Tauros Aqua Breed",
+      "types": "Fighting/Water",
+      "abilities": "Intimidate|Anger Point|Cud Chew",
+      "image_path": "pokemon_champions_assets/pokemon/Paldean Tauros Aqua Breed.png",
+      "form": "Paldean Aqua Breed",
+      "hp": 150, "atk": 130, "def": 125,
+      "spa": 50, "spd": 90, "spe": 120, "total": 610
+    },
+    {
+      "title": "Tauros [Paldean Form (Blaze Breed)]",
+      "base_name": "Tauros",
+      "saved_name": "Paldean Tauros Blaze Breed",
+      "types": "Fighting/Fire",
+      "abilities": "Intimidate|Anger Point|Cud Chew",
+      "image_path": "pokemon_champions_assets/pokemon/Paldean Tauros Blaze Breed.png",
+      "form": "Paldean Blaze Breed",
+      "hp": 150, "atk": 130, "def": 125,
+      "spa": 50, "spd": 90, "spe": 120, "total": 610
+    },
+    {
+      "title": "Tauros",
+      "base_name": "Tauros",
+      "saved_name": "Tauros",
+      "types": "Normal",
+      "abilities": "Intimidate|Anger Point|Sheer Force",
+      "image_path": "pokemon_champions_assets/pokemon/Tauros.png",
+      "form": "",
+      "hp": 150, "atk": 120, "def": 115,
+      "spa": 60, "spd": 90, "spe": 130, "total": 610
+    }
+  ]
+}
+base_name
+The shared Pokémon name. Matches the metadata filename and the /api/metadata/:name route parameter.
+saved_name
+The form-specific name used for battle data CSVs, sprites, and the /api/battle/:format/:name route.
+form
+Human-readable form label. Empty string for the base form.
+abilities
+Pipe-separated list of all abilities for this form.
+Direct Files
+Raw CSV and images
+Use static paths for downloads, spreadsheet imports, notebooks, sprites, and type icons. Raw CSV and sprite paths still use the site/file name, while JSON API routes accept Showdown IDs.
+
+
+GET /pokemon_champions_assets/battle_data/Doubles/Garchomp.csv
+GET /pokemon_champions_assets/battle_data/Singles/Garchomp.csv
+
+
+GET /pokemon_champions_assets/battle_data/M4/16_07_2026/Doubles/Garchomp.csv
+GET /pokemon_champions_assets/battle_data/M4/16_07_2026/Singles/Garchomp.csv
+
+
+GET /pokemon_champions_assets/metadata/Tauros.csv
+
+
+GET /pokemon_champions_assets/pokemon/Tauros.png
+GET /pokemon_champions_assets/pokemon/Paldean%20Tauros%20Aqua%20Breed.png
+
+
+GET /pokemon_champions_assets/types/Dragon.png
+Client Example
+Filtering with the index
+For client-side tools, load the index once and filter summary data before requesting full rows.
+
+const index = await fetch("/api")
+  .then((response) => response.json());
+
+const fastGroundTypes = index.pokemon.filter((entry) => {
+  const stats = entry.summary?.baseStats ?? {};
+  const types = entry.summary?.types ?? [];
+
+  return types.includes("Ground")
+    && Number(stats.speed ?? 0) >= 100;
+});
+Behavior
+Response behavior
+API endpoints return JSON.
+CSV files and images remain available as static assets.
+Pokemon route names are matched case-insensitively and accept Pokemon Showdown internal IDs.
+Without days, battle endpoints use the current root Doubles or Singles folder.
+With days, battle endpoints return recent dated daily snapshots from folders like M4/16_07_2026.
+CORS is enabled for browser apps on other domains.
